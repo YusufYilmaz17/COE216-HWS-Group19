@@ -9,7 +9,7 @@ function plotTimeDomain(points, fLow, fHigh) {
 
   const ctx = document.getElementById('time-chart').getContext('2d');
 
-  if (timeChart) timeChart.destroy(); // must destroy before redrawing
+  if (timeChart) timeChart.destroy(); 
 
   timeChart = new Chart(ctx, {
     type: 'line',
@@ -19,7 +19,7 @@ function plotTimeDomain(points, fLow, fHigh) {
         data: visible,
         borderColor: '#00ff88',
         borderWidth: 1.5,
-        pointRadius: 0,  // no dots, just the line
+        pointRadius: 0, 
         tension: 0,
       }]
     },
@@ -34,7 +34,7 @@ function plotTimeDomain(points, fLow, fHigh) {
           grid:  { color: '#2a2a2a' }
         },
         y: {
-          min: -2.5, max: 2.5,  // two waves
+          min: -2.5, max: 2.5,  
           title: { display: true, text: 'Amplitude', color: '#aaa' },
           ticks: { color: '#aaa' },
           grid:  { color: '#2a2a2a' }
@@ -137,4 +137,5 @@ function plotFFT(rawSamples, fLow, fHigh) {
       plugins: { legend: { labels: { color: '#aaa', font: { family: 'monospace' } } } }
     }
   });
+
 }
