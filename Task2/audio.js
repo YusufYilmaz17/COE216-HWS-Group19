@@ -16,9 +16,10 @@ function playDTMF(fLow, fHigh) {
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + TONE_DURATION);
 
     osc.connect(gain);
-    gain.connect(audioCtx.destination); // destination = your speakers
+    gain.connect(audioCtx.destination); 
 
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + TONE_DURATION);
   });
+
 }
