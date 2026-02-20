@@ -67,7 +67,6 @@ h2 {
 .big   { font-size: 2rem; font-weight: bold; }
 .val   { font-size: 1rem; }
 
-/* ── Charts ── */
 canvas {
   background: #1a1a1a;
   border-radius: 6px;
@@ -88,4 +87,5 @@ canvas {
 
 #freq-table th { background: #1a2a1a; color: #00ff88; }
 #freq-table td { color: #ccc; }
+
 #freq-table td:first-child { color: #ffaa00; font-weight: bold; font-size: 1rem; }
