@@ -1,15 +1,15 @@
 let timeChart = null;
-let fftChart  = null;
+let fftChart = null;
 
 function plotTimeDomain(points, fLow, fHigh) {
-  const periods  = 3;
+  const periods = 3;
   const showSecs = periods / fLow;
-  const showN    = Math.round(FS * showSecs);
-  const visible  = points.slice(0, showN);
+  const showN = Math.round(FS * showSecs);
+  const visible = points.slice(0, showN);
 
   const ctx = document.getElementById('time-chart').getContext('2d');
 
-  if (timeChart) timeChart.destroy(); 
+  if (timeChart) timeChart.destroy();
 
   timeChart = new Chart(ctx, {
     type: 'line',
@@ -19,54 +19,75 @@ function plotTimeDomain(points, fLow, fHigh) {
         data: visible,
         borderColor: '#00ff88',
         borderWidth: 1.5,
-        pointRadius: 0, 
+        pointRadius: 0,
         tension: 0,
       }]
     },
     options: {
-      parsing: false,  
+      responsive: true,
+      maintainAspectRatio: false,
+      parsing: false,
       animation: false,
       scales: {
         x: {
           type: 'linear',
           title: { display: true, text: 'Time (s)', color: '#aaa' },
           ticks: { color: '#aaa', maxTicksLimit: 8 },
-          grid:  { color: '#2a2a2a' }
+          grid: { color: '#2a2a2a' }
         },
         y: {
-          min: -2.5, max: 2.5,  
+          min: -1.2, max: 1.2,
           title: { display: true, text: 'Amplitude', color: '#aaa' },
           ticks: { color: '#aaa' },
-          grid:  { color: '#2a2a2a' }
+          grid: { color: '#2a2a2a' }
         }
       },
       plugins: { legend: { labels: { color: '#aaa', font: { family: 'monospace' } } } }
     }
   });
+
+  timeChart.resize();
 }
 
 function computeFFT(re, im) {
   const N = re.length;
   if (N <= 1) return;
 
-  const rEven = new Float64Array(N/2), iEven = new Float64Array(N/2);
-  const rOdd  = new Float64Array(N/2), iOdd  = new Float64Array(N/2);
-
-  for (let i = 0; i < N/2; i++) {
-    rEven[i] = re[2*i];   iEven[i] = im[2*i];
-    rOdd[i]  = re[2*i+1]; iOdd[i]  = im[2*i+1];
+  // 1. Bit-reversal permutation
+  let j = 0;
+  for (let i = 0; i < N - 1; i++) {
+    if (i < j) {
+      const tr = re[i]; re[i] = re[j]; re[j] = tr;
+      const ti = im[i]; im[i] = im[j]; im[j] = ti;
+    }
+    let m = N >> 1;
+    while (j >= m) { j -= m; m >>= 1; }
+    j += m;
   }
 
-  computeFFT(rEven, iEven);
-  computeFFT(rOdd,  iOdd);
+  // 2. Iterative in-place FFT
+  for (let size = 2; size <= N; size *= 2) {
+    const halfSize = size / 2;
+    const angleStep = -2 * Math.PI / size;
+    for (let i = 0; i < N; i += size) {
+      for (let k = 0; k < halfSize; k++) {
+        const angle = k * angleStep;
+        const wr = Math.cos(angle);
+        const wi = Math.sin(angle);
 
-  for (let k = 0; k < N/2; k++) {
-    const angle = -2 * Math.PI * k / N;
-    const wr = Math.cos(angle), wi = Math.sin(angle);
-    const tr = wr * rOdd[k] - wi * iOdd[k];
-    const ti = wr * iOdd[k] + wi * rOdd[k];
-    re[k]       = rEven[k] + tr;  im[k]       = iEven[k] + ti;
-    re[k + N/2] = rEven[k] - tr;  im[k + N/2] = iEven[k] - ti;
+        const evenIndex = i + k;
+        const oddIndex = i + k + halfSize;
+
+        const tr = wr * re[oddIndex] - wi * im[oddIndex];
+        const ti = wr * im[oddIndex] + wi * re[oddIndex];
+
+        re[oddIndex] = re[evenIndex] - tr;
+        im[oddIndex] = im[evenIndex] - ti;
+
+        re[evenIndex] += tr;
+        im[evenIndex] += ti;
+      }
+    }
   }
 }
 
@@ -82,8 +103,8 @@ function plotFFT(rawSamples, fLow, fHigh) {
   computeFFT(re, im);
 
   const MAX_FREQ = 2000;
-  const binHz    = FS / FFT_SIZE;           
-  const maxBin   = Math.floor(MAX_FREQ / binHz);
+  const binHz = FS / FFT_SIZE;
+  const maxBin = Math.floor(MAX_FREQ / binHz);
 
   const freqLabels = [];
   const magnitudes = [];
@@ -116,6 +137,8 @@ function plotFFT(rawSamples, fLow, fHigh) {
       }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       animation: false,
       scales: {
         x: {
@@ -138,4 +161,5 @@ function plotFFT(rawSamples, fLow, fHigh) {
     }
   });
 
+  fftChart.resize();
 }

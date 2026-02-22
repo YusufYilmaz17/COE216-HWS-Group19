@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>COE 216 — Task 2: DTMF</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+  <h2>Task 2 — DTMF Synthesizer</h2>
+
+  <div id="layout">
+
+    <div id="left">
+      <div id="keypad">
+        <!-- Top Row: Column Frequencies -->
+        <div></div>
+        <div class="freq-label">1209Hz</div>
+        <div class="freq-label">1336Hz</div>
+        <div class="freq-label">1477Hz</div>
+        <div class="freq-label">1633Hz</div>
+
+        <!-- Row 1 -->
+        <div class="freq-label row-label">697Hz</div>
+        <button class="key" data-key="1" onclick="pressKey('1', this)">1</button>
+        <button class="key" data-key="2" onclick="pressKey('2', this)">2</button>
+        <button class="key" data-key="3" onclick="pressKey('3', this)">3</button>
+        <button class="key" data-key="A" onclick="pressKey('A', this)">A</button>
+
+        <!-- Row 2 -->
+        <div class="freq-label row-label">770Hz</div>
+        <button class="key" data-key="4" onclick="pressKey('4', this)">4</button>
+        <button class="key" data-key="5" onclick="pressKey('5', this)">5</button>
+        <button class="key" data-key="6" onclick="pressKey('6', this)">6</button>
+        <button class="key" data-key="B" onclick="pressKey('B', this)">B</button>
+
+        <!-- Row 3 -->
+        <div class="freq-label row-label">852Hz</div>
+        <button class="key" data-key="7" onclick="pressKey('7', this)">7</button>
+        <button class="key" data-key="8" onclick="pressKey('8', this)">8</button>
+        <button class="key" data-key="9" onclick="pressKey('9', this)">9</button>
+        <button class="key" data-key="C" onclick="pressKey('C', this)">C</button>
+
+        <!-- Row 4 -->
+        <div class="freq-label row-label">941Hz</div>
+        <button class="key" data-key="*" onclick="pressKey('*', this)">*</button>
+        <button class="key" data-key="0" onclick="pressKey('0', this)">0</button>
+        <button class="key" data-key="#" onclick="pressKey('#', this)">#</button>
+        <button class="key" data-key="D" onclick="pressKey('D', this)">D</button>
+      </div>
+      <p class="hint">Tip: You can also use your keyboard (0-9, *, #)</p>
+    </div>
+
+    <div id="right">
+
+      <div id="info">
+        Key pressed: <span class="big amber" id="d-key">—</span><br />
+        Row frequency (f_low):&nbsp; <span class="val green" id="d-flow">— Hz</span><br />
+        Col frequency (f_high): <span class="val green" id="d-fhigh">— Hz</span><br />
+        Formula: <span class="val green">x(t) = sin(2π·f_low·t) + sin(2π·f_high·t)</span>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="time-chart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="fft-chart"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="dtmf-data.js"></script>
+  <script src="audio.js"></script>
+  <script src="signal.js"></script>
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+
+</body>
+
+</html>

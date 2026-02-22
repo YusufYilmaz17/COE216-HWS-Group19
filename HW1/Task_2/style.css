@@ -1,0 +1,126 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: monospace;
+  background: #111;
+  color: #eee;
+  padding: 30px;
+}
+
+h2 {
+  color: #00ff88;
+  margin-bottom: 24px;
+  letter-spacing: 2px;
+}
+
+#layout {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+#left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#keypad {
+  display: grid;
+  grid-template-columns: 55px repeat(4, 70px);
+  grid-template-rows: 25px repeat(4, 70px);
+  gap: 10px;
+  align-items: center;
+}
+
+.freq-label {
+  color: #888;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.freq-label.row-label {
+  text-align: right;
+  padding-right: 5px;
+}
+
+.key {
+  height: 70px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  background: #222;
+  color: #eee;
+  border: 2px solid #444;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.key:hover {
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.key.key-active {
+  background: #00ff88;
+  color: #000;
+  border-color: #00ff88;
+}
+
+.hint {
+  color: #555;
+  font-size: 0.75rem;
+}
+
+#right {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#info {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  padding: 14px 18px;
+  border-radius: 6px;
+  line-height: 2.2;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.green {
+  color: #00ff88;
+}
+
+.amber {
+  color: #ffaa00;
+}
+
+.big {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.val {
+  font-size: 1rem;
+}
+
+.chart-container {
+  display: none;
+  position: relative;
+  height: 350px;
+  width: 100%;
+}
+
+canvas {
+  background: #1a1a1a;
+  border-radius: 6px;
+  display: block;
+}
