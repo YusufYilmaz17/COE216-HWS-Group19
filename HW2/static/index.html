@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turkish DTMF Encoder & Decoder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>DTMF <span class="highlight">Turkish</span> System</h1>
+            <p>Encode and Decode text using 30 standard frequencies</p>
+        </header>
+
+        <main class="grid-layout">
+            <!-- ENCODER PANEL -->
+            <section class="panel glass">
+                <h2>Encoder <span class="badge">Live Dialpad</span></h2>
+
+                <div class="dialpad-container" id="dialpad-container">
+                    <!-- Grid and Frequencies injected via JS -->
+                </div>
+
+                <div class="controls">
+                    <button id="btn-record" class="action-btn start"><i class="icon">🔴</i> Record</button>
+                    <button id="btn-stop-record" class="action-btn stop" disabled><i class="icon">⏹️</i> Stop</button>
+                </div>
+
+                <div class="output-box">
+                    <label>Current Sequence:</label>
+                    <div id="sequence-display" class="sequence-display">Click to type...</div>
+                </div>
+            </section>
+
+            <!-- DECODER PANEL -->
+            <section class="panel glass">
+                <h2>Decoder <span class="badge">WAV Analysis</span></h2>
+
+                <div class="upload-area" id="upload-area">
+                    <label for="file-upload" class="upload-label">
+                        <i class="icon">📁</i>
+                        <span>Select a <strong>.wav</strong> file</span>
+                    </label>
+                    <input type="file" id="file-upload" accept="audio/wav" />
+                    <p id="file-name" class="file-name">No file selected</p>
+                </div>
+
+                <div class="controls">
+                    <button id="btn-decode" class="action-btn process" disabled><i class="icon">⚡</i> Decode</button>
+                </div>
+
+                <div class="output-box">
+                    <label>Decoded Text:</label>
+                    <div id="decoded-display" class="sequence-display result">Awaiting signal...</div>
+                </div>
+            </section>
+        </main>
+
+        <!-- SIGNAL ANALYSIS PANEL -->
+        <section class="panel glass analysis-panel" id="analysis-panel" style="display: none; margin-top: 0;">
+            <h2>Signal Analysis <span class="badge">Generated Chart</span></h2>
+            <div class="image-container">
+                <img id="signal-chart" src="" alt="Signal Analysis Chart">
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
