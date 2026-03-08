@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Analysis Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .drag-active {
+            border-color: #3b82f6 !important;
+            background: rgba(59, 130, 246, 0.1) !important;
+        }
+        /* Loader animation */
+        .loader {
+            border-top-color: #3b82f6;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        canvas {
+            max-height: 250px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <div class="w-full max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="text-center py-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-2">
+                Speech Analysis Dashboard
+            </h1>
+            <p class="text-slate-400 text-lg">Upload an audio file to classify voiced and unvoiced speech segments</p>
+        </header>
+
+        <!-- Upload Zone -->
+        <div id="uploadZone" class="glass-panel rounded-2xl p-8 border-2 border-dashed border-slate-600 transition-all duration-300 text-center cursor-pointer hover:border-blue-400 hover:bg-slate-800/50">
+            <input type="file" id="fileInput" class="hidden" accept=".wav">
+            <div class="flex flex-col items-center justify-center space-y-4">
+                <div class="p-4 bg-slate-800 rounded-full text-blue-400">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-1">Drag & Drop your WAV file here</h3>
+                    <p class="text-sm text-slate-400">or click to browse from your computer</p>
+                </div>
+                <div id="selectedFileName" class="text-sm font-semibold text-blue-300 hidden px-4 py-2 bg-blue-900/30 rounded-lg"></div>
+            </div>
+        </div>
+
+        <!-- Processing Loader -->
+        <div id="loader" class="hidden flex-col items-center justify-center py-12">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-700 h-16 w-16 mb-4"></div>
+            <h2 class="text-xl font-semibold text-slate-300">Processing Audio Signal...</h2>
+            <p class="text-slate-500 text-sm mt-2">Computing energy, ZCR, and classifying speech frames.</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg relative" role="alert">
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline" id="errorText"></span>
+        </div>
+
+        <!-- Results Dashboard -->
+        <div id="resultsDashboard" class="hidden space-y-6 animate-fade-in-up">
+            
+            <!-- Metrics Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass-panel rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                    <p class="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Original Duration</p>
+                    <h3 class="text-3xl font-bold text-white flex items-baseline gap-1" id="valOriginalDuration">0.0<span class="text-lg text-slate-400">s</span></h3>
+                </div>
+                <div class="glass-panel rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                    <p class="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Speech Duration</p>
+                    <h3 class="text-3xl font-bold text-green-400 flex items-baseline gap-1" id="valCompressedDuration">0.0<span class="text-lg text-green-600">s</span></h3>
+                </div>
+                <div class="glass-panel rounded-xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 z-0"></div>
+                    <div class="z-10 relative">
+                        <p class="text-slate-300 text-sm font-medium uppercase tracking-wider mb-1">Compression Ratio</p>
+                        <h3 class="text-4xl font-extrabold text-white" id="valCompressionRatio">0%</h3>
+                        <p class="text-xs text-blue-300 mt-1" id="valDataSaved">Data Saved: 0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Button -->
+            <div class="flex justify-end">
+                <a id="downloadBtn" href="#" class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-download"></i>
+                    Download Processed Speech
+                </a>
+            </div>
+
+            <!-- Charts Container -->
+            <div class="space-y-6">
+                
+                <!-- Raw Signal Chart -->
+                <div class="glass-panel rounded-xl p-4 md:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-white">Waveform & Voicing Masks</h3>
+                        <div class="flex items-center gap-4 text-sm">
+                            <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-green-500/50"></div> <span class="text-slate-300">Voiced</span></div>
+                            <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-yellow-400/50"></div> <span class="text-slate-300">Unvoiced</span></div>
+                        </div>
+                    </div>
+                    <div class="relative h-[250px] w-full">
+                        <canvas id="waveformChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Energy Chart -->
+                <div class="glass-panel rounded-xl p-4 md:p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Short-Time Energy</h3>
+                    <div class="relative h-[250px] w-full">
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- ZCR Chart -->
+                <div class="glass-panel rounded-xl p-4 md:p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Zero-Crossing Rate (ZCR)</h3>
+                    <div class="relative h-[250px] w-full">
+                        <canvas id="zcrChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const resultsDashboard = document.getElementById('resultsDashboard');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Summary Metric Elements
+        const valOriginalDuration = document.getElementById('valOriginalDuration');
+        const valCompressedDuration = document.getElementById('valCompressedDuration');
+        const valCompressionRatio = document.getElementById('valCompressionRatio');
+        const valDataSaved = document.getElementById('valDataSaved');
+
+        // Chart instances
+        let waveformChart, energyChart, zcrChart;
+
+        // Custom plugin to draw background regions (voiced/unvoiced masks)
+        const regionDrawPlugin = {
+            id: 'regionDrawPlugin',
+            beforeDraw: (chart) => {
+                if (!chart.config.options.plugins.regions || !chart.config.options.plugins.regions.data) return;
+                
+                const { ctx, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
+                const regions = chart.config.options.plugins.regions.data;
+                
+                ctx.save();
+                regions.forEach(region => {
+                    const startX = x.getPixelForValue(region.start);
+                    const endX = x.getPixelForValue(region.end);
+                    
+                    // Only draw if within chart area
+                    if (startX <= right && endX >= left) {
+                        ctx.fillStyle = region.color;
+                        ctx.fillRect(Math.max(startX, left), top, Math.min(endX, right) - Math.max(startX, left), bottom - top);
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        Chart.register(regionDrawPlugin);
+
+        // Upload Zone Interactions
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => uploadZone.classList.add('drag-active'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, () => uploadZone.classList.remove('drag-active'), false);
+        });
+
+        uploadZone.addEventListener('drop', handleDrop, false);
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFile(file);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            handleFile(file);
+        }
+
+        function handleFile(file) {
+            if (!file) return;
+            
+            if (file.type !== "audio/wav" && !file.name.toLowerCase().endsWith('.wav')) {
+                showError("Please upload a valid .WAV file.");
+                return;
+            }
+
+            selectedFileName.textContent = file.name;
+            selectedFileName.classList.remove('hidden');
+            hideError();
+            resultsDashboard.classList.add('hidden');
+            uploadAudio(file);
+        }
+
+        function showError(msg) {
+            errorText.textContent = msg;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        async function uploadAudio(file) {
+            loader.classList.remove('hidden');
+            uploadZone.style.pointerEvents = 'none';
+            uploadZone.style.opacity = '0.5';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "Server error occurred");
+                }
+
+                const data = await response.json();
+                processResults(data);
+                
+            } catch (err) {
+                showError(err.message);
+                loader.classList.add('hidden');
+            } finally {
+                uploadZone.style.pointerEvents = 'auto';
+                uploadZone.style.opacity = '1';
+            }
+        }
+
+        function buildRegions(data) {
+            const regions = [];
+            const fs = data.fs;
+            const duration = data.original_duration;
+            
+            // Reconstruct regions from voiced/unvoiced boolean arrays
+            for(let i=0; i<data.voiced.length; i++) {
+                const start = i * data.frame_step / fs;
+                const end = Math.min((i * data.frame_step + data.frame_length) / fs, duration);
+                
+                if(data.voiced[i] === 1) {
+                    regions.push({ start, end, color: 'rgba(34, 197, 94, 0.25)' }); // Green
+                } else if(data.unvoiced[i] === 1) {
+                    regions.push({ start, end, color: 'rgba(234, 179, 8, 0.25)' }); // Yellow
+                }
+            }
+            return regions;
+        }
+
+        function processResults(data) {
+            loader.classList.add('hidden');
+            resultsDashboard.classList.remove('hidden');
+
+            // Set Download Link
+            downloadBtn.href = `/download/${data.processed_file_id}`;
+
+            // Update Metrics Dashboard
+            valOriginalDuration.innerHTML = `${data.original_duration.toFixed(2)}<span class="text-sm text-slate-400 font-normal">s</span>`;
+            valCompressedDuration.innerHTML = `${data.compressed_duration.toFixed(2)}<span class="text-sm text-green-600 font-normal">s</span>`;
+            
+            const ratio = (data.compression_ratio * 100).toFixed(1);
+            const saved = ((1 - data.compression_ratio) * 100).toFixed(1);
+            
+            valCompressionRatio.textContent = `${ratio}%`;
+            valDataSaved.textContent = `Data Reduced: ${saved}%`;
+
+            // Prepare common chart options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        grid: { color: 'rgba(51, 65, 85, 0.5)' },
+                        ticks: { color: '#94a3b8', font: { family: 'Inter' } },
+                        title: { display: true, text: 'Time (s)', color: '#64748b' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(51, 65, 85, 0.5)' },
+                        ticks: { color: '#94a3b8', font: { family: 'Inter' } }
+                    }
+                }
+            };
+
+            const regions = buildRegions(data);
+
+            // 1. Waveform Chart
+            if(waveformChart) waveformChart.destroy();
+            const ctx1 = document.getElementById('waveformChart').getContext('2d');
+            
+            const rawDataPoints = data.time_signal.map((t, i) => ({x: t, y: data.signal[i]}));
+
+            waveformChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Amplitude',
+                        data: rawDataPoints,
+                        borderColor: '#60a5fa', // blue-400
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        regions: { data: regions }
+                    },
+                    scales: {
+                        x: { ...commonOptions.scales.x, max: data.original_duration },
+                        y: { ...commonOptions.scales.y, min: -1.1, max: 1.1 }
+                    }
+                }
+            });
+
+            // 2. Energy Chart
+            if(energyChart) energyChart.destroy();
+            const ctx2 = document.getElementById('energyChart').getContext('2d');
+            
+            const energyDataPoints = data.time_frames.map((t, i) => ({x: t, y: data.energies[i]}));
+
+            energyChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Short-Time Energy',
+                            data: energyDataPoints,
+                            borderColor: '#ef4444', // red-500
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Noise Threshold',
+                            data: [
+                                {x: 0, y: data.noise_threshold},
+                                {x: data.original_duration, y: data.noise_threshold}
+                            ],
+                            borderColor: '#f8fafc',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: commonOptions.scales.x,
+                        y: {
+                            ...commonOptions.scales.y,
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Energy (Log Scale)', color: '#64748b'}
+                        }
+                    }
+                }
+            });
+
+            // 3. ZCR Chart
+            if(zcrChart) zcrChart.destroy();
+            const ctx3 = document.getElementById('zcrChart').getContext('2d');
+            
+            const zcrDataPoints = data.time_frames.map((t, i) => ({x: t, y: data.zcrs[i]}));
+
+            zcrChart = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Zero-Crossing Rate',
+                            data: zcrDataPoints,
+                            borderColor: '#a855f7', // purple-500
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'ZCR Threshold',
+                            data: [
+                                {x: 0, y: data.zcr_threshold},
+                                {x: data.original_duration, y: data.zcr_threshold}
+                            ],
+                            borderColor: '#f8fafc',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: commonOptions.scales.x,
+                        y: {
+                            ...commonOptions.scales.y,
+                            min: 0,
+                            title: { display: true, text: 'ZCR', color: '#64748b'}
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
